@@ -1,0 +1,756 @@
+# TASC-RestoreMed Task 4.1 Database - Implementation Guide
+
+## Quick Start Guide
+
+### Prerequisites
+- MySQL 5.7.4 or higher
+- Database user with CREATE, INSERT, UPDATE, DELETE, SELECT privileges
+- Recommended: phpMyAdmin or MySQL Workbench for GUI management
+
+---
+
+## Installation Steps
+
+### Step 1: Create Database
+
+```sql
+CREATE DATABASE tasc_restoremed 
+CHARACTER SET utf8mb4 
+COLLATE utf8mb4_unicode_ci;
+
+USE tasc_restoremed;
+```
+
+### Step 2: Execute Schema
+
+```bash
+# From command line
+mysql -u your_username -p tasc_restoremed < task_4_1_database_schema.sql
+
+# Or import via phpMyAdmin/Workbench GUI
+```
+
+### Step 3: Verify Installation
+
+```sql
+-- Check all tables were created
+SHOW TABLES;
+
+-- Should show 19 tables:
+-- user_roles, users, funding_programs, solution_types, regions
+-- thematic_clusters, organizations, keywords, projects
+-- project_organizations, project_regions, project_clusters
+-- project_keywords, synergies, synergy_projects, search_logs
+
+-- Verify initial data
+SELECT COUNT(*) as role_count FROM user_roles; -- Should be 4
+SELECT COUNT(*) as program_count FROM funding_programs; -- Should be 4
+SELECT COUNT(*) as cluster_count FROM thematic_clusters; -- Should be 7
+SELECT COUNT(*) as region_count FROM regions; -- Should be 30
+SELECT COUNT(*) as solution_count FROM solution_types; -- Should be 13
+```
+
+---
+
+## Sample Data Insertion
+
+### Creating First Admin User
+
+```sql
+-- First, create admin user (password: 'tempPassword123' - CHANGE THIS!)
+-- This password hash is example only - generate your own using bcrypt
+INSERT INTO users (username, email, password_hash, full_name, organization, role_id, is_active)
+VALUES (
+    'admin',
+    'admin@tasc-restoremed.eu',
+    '$2y$10$YourBcryptHashHere', -- Replace with actual bcrypt hash
+    'Database Administrator',
+    'TASC-RestoreMed Consortium',
+    1, -- Admin role
+    TRUE
+);
+```
+
+### Adding Sample Project
+
+```sql
+-- Step 1: Add coordinator organization
+INSERT INTO organizations (organization_name, organization_acronym, organization_type, country, is_consortium_partner)
+VALUES (
+    'Hellenic Centre for Marine Research',
+    'HCMR',
+    'Research',
+    'Greece',
+    TRUE
+);
+
+SET @org_id = LAST_INSERT_ID();
+
+-- Step 2: Add the project
+INSERT INTO projects (
+    project_title,
+    project_acronym,
+    grant_agreement_number,
+    funding_program_id,
+    total_budget,
+    start_date,
+    end_date,
+    duration_months,
+    project_status,
+    abstract,
+    solution_type_id,
+    coordinator_organization_id,
+    is_community_led,
+    deployment_stage,
+    data_source,
+    created_by
+)
+VALUES (
+    'Technical Assistance for Scaling Community-Led Actions in Mediterranean',
+    'TASC-RestoreMed',
+    '101217661',
+    2, -- Horizon Europe
+    5000000.00,
+    '2025-01-01',
+    '2028-12-31',
+    48,
+    'Active',
+    'Supporting community-led actions for ocean and water health in the Mediterranean region.',
+    4, -- Community-Led Action
+    @org_id,
+    TRUE,
+    'Deployed',
+    'Direct Entry',
+    1 -- Admin user
+);
+
+SET @project_id = LAST_INSERT_ID();
+
+-- Step 3: Link to regions
+INSERT INTO project_regions (project_id, region_id, is_primary_region)
+VALUES 
+    (@project_id, 10, TRUE), -- Greece as primary
+    (@project_id, 23, FALSE); -- Western Mediterranean
+
+-- Step 4: Assign to clusters
+INSERT INTO project_clusters (project_id, cluster_id, is_primary_cluster, relevance_score, assigned_by)
+VALUES
+    (@project_id, 3, TRUE, 1.00, 1), -- Sustainable Blue Economy
+    (@project_id, 4, FALSE, 0.85, 1); -- Water Management
+
+-- Step 5: Add keywords
+INSERT INTO keywords (keyword_text, keyword_category)
+VALUES 
+    ('community-led', 'Approach'),
+    ('technical assistance', 'Support'),
+    ('Mediterranean', 'Geography'),
+    ('scaling', 'Deployment');
+
+INSERT INTO project_keywords (project_id, keyword_id, source)
+SELECT @project_id, keyword_id, 'Manual'
+FROM keywords
+WHERE keyword_text IN ('community-led', 'technical assistance', 'Mediterranean', 'scaling');
+```
+
+---
+
+## Common Queries
+
+### Dashboard Search Queries
+
+#### 1. Search Projects by Keyword
+
+```sql
+SELECT DISTINCT
+    p.project_id,
+    p.project_title,
+    p.project_acronym,
+    p.start_date,
+    p.end_date,
+    o.organization_name as coordinator,
+    GROUP_CONCAT(DISTINCT k.keyword_text) as keywords
+FROM projects p
+LEFT JOIN organizations o ON p.coordinator_organization_id = o.organization_id
+LEFT JOIN project_keywords pk ON p.project_id = pk.project_id
+LEFT JOIN keywords k ON pk.keyword_id = k.keyword_id
+WHERE k.keyword_text LIKE '%pollution%'
+   OR p.project_title LIKE '%pollution%'
+   OR p.abstract LIKE '%pollution%'
+GROUP BY p.project_id
+ORDER BY p.start_date DESC;
+```
+
+#### 2. Filter Projects by Region
+
+```sql
+SELECT DISTINCT
+    p.project_id,
+    p.project_title,
+    p.project_acronym,
+    GROUP_CONCAT(DISTINCT r.region_name) as regions,
+    o.organization_name as coordinator
+FROM projects p
+INNER JOIN project_regions pr ON p.project_id = pr.project_id
+INNER JOIN regions r ON pr.region_id = r.region_id
+LEFT JOIN organizations o ON p.coordinator_organization_id = o.organization_id
+WHERE r.country = 'Greece'
+   OR r.region_name = 'Eastern Mediterranean'
+GROUP BY p.project_id
+ORDER BY p.project_title;
+```
+
+#### 3. Filter Projects by Thematic Cluster
+
+```sql
+SELECT 
+    p.project_id,
+    p.project_title,
+    p.project_acronym,
+    tc.cluster_name,
+    pc.relevance_score,
+    o.organization_name as coordinator
+FROM projects p
+INNER JOIN project_clusters pc ON p.project_id = pc.project_id
+INNER JOIN thematic_clusters tc ON pc.cluster_id = tc.cluster_id
+LEFT JOIN organizations o ON p.coordinator_organization_id = o.organization_id
+WHERE tc.cluster_name = 'Pollution Prevention & Reduction'
+ORDER BY pc.relevance_score DESC, p.project_title;
+```
+
+#### 4. Filter Projects by Partner Organization
+
+```sql
+SELECT DISTINCT
+    p.project_id,
+    p.project_title,
+    p.project_acronym,
+    po.role_in_project,
+    o.organization_name
+FROM projects p
+INNER JOIN project_organizations po ON p.project_id = po.project_id
+INNER JOIN organizations o ON po.organization_id = o.organization_id
+WHERE o.organization_name LIKE '%Marine%'
+   OR o.organization_acronym = 'HCMR'
+ORDER BY p.project_title;
+```
+
+#### 5. Advanced Multi-Criteria Search
+
+```sql
+SELECT DISTINCT
+    p.project_id,
+    p.project_title,
+    p.project_acronym,
+    p.total_budget,
+    p.start_date,
+    p.end_date,
+    fp.program_name,
+    st.type_name as solution_type,
+    GROUP_CONCAT(DISTINCT tc.cluster_name) as clusters,
+    GROUP_CONCAT(DISTINCT r.region_name) as regions
+FROM projects p
+LEFT JOIN funding_programs fp ON p.funding_program_id = fp.program_id
+LEFT JOIN solution_types st ON p.solution_type_id = st.solution_type_id
+LEFT JOIN project_clusters pc ON p.project_id = pc.project_id
+LEFT JOIN thematic_clusters tc ON pc.cluster_id = tc.cluster_id
+LEFT JOIN project_regions pr ON p.project_id = pr.project_id
+LEFT JOIN regions r ON pr.region_id = r.region_id
+WHERE 
+    fp.program_code = 'HE' -- Horizon Europe only
+    AND p.project_status = 'Active'
+    AND p.is_community_led = TRUE
+    AND p.start_date >= '2023-01-01'
+GROUP BY p.project_id
+HAVING FIND_IN_SET('Pollution Prevention & Reduction', clusters) > 0
+ORDER BY p.start_date DESC;
+```
+
+#### 6. Full-Text Search (Fast)
+
+```sql
+SELECT 
+    p.project_id,
+    p.project_title,
+    p.project_acronym,
+    MATCH(p.project_title, p.abstract, p.objectives) 
+        AGAINST ('marine ecosystem restoration' IN NATURAL LANGUAGE MODE) as relevance
+FROM projects p
+WHERE MATCH(p.project_title, p.abstract, p.objectives) 
+    AGAINST ('marine ecosystem restoration' IN NATURAL LANGUAGE MODE)
+ORDER BY relevance DESC
+LIMIT 20;
+```
+
+---
+
+### KPI Monitoring Queries
+
+#### KPI 4.1.1: Total Projects Count
+
+```sql
+-- Total projects by status
+SELECT 
+    project_status,
+    COUNT(*) as project_count
+FROM projects
+GROUP BY project_status
+ORDER BY project_count DESC;
+
+-- Total projects by funding program
+SELECT 
+    fp.program_name,
+    COUNT(p.project_id) as project_count
+FROM projects p
+LEFT JOIN funding_programs fp ON p.funding_program_id = fp.program_id
+GROUP BY fp.program_name
+ORDER BY project_count DESC;
+
+-- Progress towards 900 target
+SELECT 
+    COUNT(*) as total_projects,
+    900 as target,
+    ROUND((COUNT(*) / 900) * 100, 2) as percentage_complete
+FROM projects;
+```
+
+#### KPI 4.1.2: Thematic Clusters
+
+```sql
+-- Active clusters with project counts
+SELECT 
+    tc.cluster_name,
+    tc.cluster_description,
+    COUNT(DISTINCT pc.project_id) as project_count
+FROM thematic_clusters tc
+LEFT JOIN project_clusters pc ON tc.cluster_id = pc.cluster_id
+WHERE tc.is_active = TRUE
+GROUP BY tc.cluster_id
+ORDER BY project_count DESC;
+```
+
+#### KPI 4.1.3: Documented Synergies
+
+```sql
+-- Synergies by status
+SELECT 
+    synergy_status,
+    COUNT(*) as synergy_count
+FROM synergies
+GROUP BY synergy_status
+ORDER BY FIELD(synergy_status, 'Identified', 'Under Review', 'Confirmed', 'Active', 'Completed', 'Discontinued');
+
+-- Detailed synergy information
+SELECT 
+    s.synergy_title,
+    s.synergy_type,
+    s.synergy_status,
+    s.identified_date,
+    o.organization_name as identified_by_org,
+    COUNT(sp.project_id) as linked_projects
+FROM synergies s
+LEFT JOIN organizations o ON s.identified_by_organization = o.organization_id
+LEFT JOIN synergy_projects sp ON s.synergy_id = sp.synergy_id
+GROUP BY s.synergy_id
+ORDER BY s.identified_date DESC;
+
+-- Projects involved in synergies
+SELECT 
+    p.project_title,
+    p.project_acronym,
+    COUNT(DISTINCT sp.synergy_id) as synergy_count
+FROM projects p
+INNER JOIN synergy_projects sp ON p.project_id = sp.project_id
+GROUP BY p.project_id
+HAVING synergy_count > 0
+ORDER BY synergy_count DESC;
+```
+
+#### KPI 4.1.4: Dashboard Usage Analytics
+
+```sql
+-- Search activity by date
+SELECT 
+    DATE(search_timestamp) as search_date,
+    COUNT(*) as total_searches,
+    COUNT(DISTINCT user_id) as unique_users,
+    COUNT(DISTINCT session_id) as unique_sessions
+FROM search_logs
+WHERE search_timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+GROUP BY search_date
+ORDER BY search_date DESC;
+
+-- Most popular search types
+SELECT 
+    search_type,
+    COUNT(*) as search_count,
+    ROUND(AVG(results_count), 2) as avg_results
+FROM search_logs
+GROUP BY search_type
+ORDER BY search_count DESC;
+
+-- Most searched keywords
+SELECT 
+    search_query,
+    COUNT(*) as search_count
+FROM search_logs
+WHERE search_type IN ('Keyword', 'Full Text')
+    AND search_query IS NOT NULL
+GROUP BY search_query
+ORDER BY search_count DESC
+LIMIT 20;
+```
+
+---
+
+### Analytics & Reporting Queries
+
+#### Projects by Region Distribution
+
+```sql
+SELECT 
+    r.region_name,
+    r.region_type,
+    COUNT(DISTINCT pr.project_id) as project_count
+FROM regions r
+LEFT JOIN project_regions pr ON r.region_id = pr.region_id
+GROUP BY r.region_id
+HAVING project_count > 0
+ORDER BY project_count DESC;
+```
+
+#### Budget Analysis
+
+```sql
+-- Total budget by cluster
+SELECT 
+    tc.cluster_name,
+    COUNT(DISTINCT p.project_id) as project_count,
+    SUM(p.total_budget) as total_budget,
+    AVG(p.total_budget) as avg_budget,
+    MIN(p.total_budget) as min_budget,
+    MAX(p.total_budget) as max_budget
+FROM projects p
+INNER JOIN project_clusters pc ON p.project_id = pc.project_id
+INNER JOIN thematic_clusters tc ON pc.cluster_id = tc.cluster_id
+WHERE p.total_budget IS NOT NULL
+GROUP BY tc.cluster_id
+ORDER BY total_budget DESC;
+
+-- Budget by region
+SELECT 
+    r.region_name,
+    COUNT(DISTINCT p.project_id) as project_count,
+    SUM(p.total_budget) as total_budget
+FROM projects p
+INNER JOIN project_regions pr ON p.project_id = pr.project_id
+INNER JOIN regions r ON pr.region_id = r.region_id
+WHERE p.total_budget IS NOT NULL
+GROUP BY r.region_id
+ORDER BY total_budget DESC
+LIMIT 10;
+```
+
+#### Community-Led Actions Analysis
+
+```sql
+SELECT 
+    CASE 
+        WHEN is_community_led = TRUE THEN 'Community-Led'
+        ELSE 'Traditional'
+    END as project_type,
+    COUNT(*) as project_count,
+    ROUND(AVG(total_budget), 2) as avg_budget,
+    deployment_stage,
+    COUNT(*) as count_by_stage
+FROM projects
+GROUP BY is_community_led, deployment_stage
+ORDER BY is_community_led DESC, deployment_stage;
+```
+
+#### Timeline Analysis
+
+```sql
+-- Projects by start year
+SELECT 
+    YEAR(start_date) as start_year,
+    COUNT(*) as projects_started,
+    SUM(total_budget) as total_budget
+FROM projects
+WHERE start_date IS NOT NULL
+GROUP BY start_year
+ORDER BY start_year DESC;
+
+-- Active projects by year
+SELECT 
+    year_num,
+    COUNT(DISTINCT p.project_id) as active_projects
+FROM (
+    SELECT 2020 as year_num UNION SELECT 2021 UNION SELECT 2022 UNION 
+    SELECT 2023 UNION SELECT 2024 UNION SELECT 2025 UNION SELECT 2026
+) years
+CROSS JOIN projects p
+WHERE YEAR(p.start_date) <= year_num 
+  AND (YEAR(p.end_date) >= year_num OR p.end_date IS NULL)
+GROUP BY year_num
+ORDER BY year_num;
+```
+
+#### Organization Participation
+
+```sql
+-- Most active organizations
+SELECT 
+    o.organization_name,
+    o.organization_type,
+    o.country,
+    COUNT(DISTINCT po.project_id) as total_projects,
+    SUM(CASE WHEN po.role_in_project = 'Coordinator' THEN 1 ELSE 0 END) as as_coordinator,
+    SUM(CASE WHEN po.role_in_project = 'Partner' THEN 1 ELSE 0 END) as as_partner
+FROM organizations o
+INNER JOIN project_organizations po ON o.organization_id = po.organization_id
+GROUP BY o.organization_id
+HAVING total_projects >= 2
+ORDER BY total_projects DESC
+LIMIT 20;
+
+-- Cross-country collaborations
+SELECT 
+    o1.country as country_1,
+    o2.country as country_2,
+    COUNT(DISTINCT po1.project_id) as collaborative_projects
+FROM project_organizations po1
+INNER JOIN project_organizations po2 ON po1.project_id = po2.project_id AND po1.organization_id < po2.organization_id
+INNER JOIN organizations o1 ON po1.organization_id = o1.organization_id
+INNER JOIN organizations o2 ON po2.organization_id = o2.organization_id
+WHERE o1.country != o2.country
+  AND o1.country IS NOT NULL
+  AND o2.country IS NOT NULL
+GROUP BY o1.country, o2.country
+HAVING collaborative_projects >= 3
+ORDER BY collaborative_projects DESC
+LIMIT 20;
+```
+
+---
+
+## Data Management Procedures
+
+### Adding a New Project (Complete Workflow)
+
+```sql
+START TRANSACTION;
+
+-- 1. Check if organization exists, if not create it
+INSERT INTO organizations (organization_name, organization_acronym, organization_type, country)
+VALUES ('New Organization', 'NEORG', 'Research', 'Spain')
+ON DUPLICATE KEY UPDATE organization_id=LAST_INSERT_ID(organization_id);
+
+SET @org_id = LAST_INSERT_ID();
+
+-- 2. Insert project
+INSERT INTO projects (
+    project_title, project_acronym, grant_agreement_number,
+    funding_program_id, total_budget, start_date, end_date, duration_months,
+    abstract, coordinator_organization_id, created_by
+)
+VALUES (
+    'New Project Title', 'NPT', '999999',
+    2, 2500000.00, '2024-01-01', '2027-12-31', 48,
+    'Project abstract here', @org_id, 1
+);
+
+SET @project_id = LAST_INSERT_ID();
+
+-- 3. Add regions
+INSERT INTO project_regions (project_id, region_id, is_primary_region)
+VALUES (@project_id, 1, TRUE); -- Spain
+
+-- 4. Add clusters
+INSERT INTO project_clusters (project_id, cluster_id, is_primary_cluster, relevance_score, assigned_by)
+VALUES (@project_id, 1, TRUE, 1.00, 1);
+
+-- 5. Add keywords (create if don't exist)
+INSERT IGNORE INTO keywords (keyword_text) VALUES ('marine pollution'), ('innovation');
+
+INSERT INTO project_keywords (project_id, keyword_id, source)
+SELECT @project_id, keyword_id, 'Manual'
+FROM keywords
+WHERE keyword_text IN ('marine pollution', 'innovation');
+
+COMMIT;
+```
+
+### Documenting a Synergy
+
+```sql
+START TRANSACTION;
+
+-- 1. Create synergy
+INSERT INTO synergies (
+    synergy_title, synergy_type, description,
+    synergy_status, identified_by, identified_date
+)
+VALUES (
+    'Shared Monitoring Methodology',
+    'Shared Methodology',
+    'Both projects use similar water quality monitoring approaches',
+    'Identified',
+    1,
+    CURDATE()
+);
+
+SET @synergy_id = LAST_INSERT_ID();
+
+-- 2. Link projects to synergy (at least 2 projects required)
+INSERT INTO synergy_projects (synergy_id, project_id, role_description)
+VALUES 
+    (@synergy_id, 101, 'Develops monitoring protocols'),
+    (@synergy_id, 205, 'Implements monitoring in pilot sites');
+
+COMMIT;
+```
+
+### Updating Project Status
+
+```sql
+-- Mark project as completed
+UPDATE projects
+SET project_status = 'Completed',
+    updated_by = 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE project_id = 123;
+
+-- Verify project
+UPDATE projects
+SET verified = TRUE,
+    verified_by = 1,
+    verified_date = CURRENT_TIMESTAMP
+WHERE project_id = 123;
+```
+
+---
+
+## Maintenance Tasks
+
+### Monthly Maintenance Script
+
+```sql
+-- Update keyword usage counts
+UPDATE keywords k
+SET usage_count = (
+    SELECT COUNT(*)
+    FROM project_keywords pk
+    WHERE pk.keyword_id = k.keyword_id
+);
+
+-- Find orphaned records (projects without regions, clusters, etc.)
+SELECT p.project_id, p.project_title, 'No regions' as issue
+FROM projects p
+LEFT JOIN project_regions pr ON p.project_id = pr.project_id
+WHERE pr.project_region_id IS NULL
+
+UNION
+
+SELECT p.project_id, p.project_title, 'No clusters' as issue
+FROM projects p
+LEFT JOIN project_clusters pc ON p.project_id = pc.project_id
+WHERE pc.project_cluster_id IS NULL
+
+UNION
+
+SELECT p.project_id, p.project_title, 'No coordinator' as issue
+FROM projects p
+WHERE p.coordinator_organization_id IS NULL;
+```
+
+### Database Statistics
+
+```sql
+-- Get table sizes
+SELECT 
+    table_name,
+    table_rows,
+    ROUND((data_length + index_length) / 1024 / 1024, 2) as size_mb
+FROM information_schema.tables
+WHERE table_schema = 'tasc_restoremed'
+ORDER BY (data_length + index_length) DESC;
+
+-- Check index usage (requires slow query log analysis)
+SHOW INDEX FROM projects;
+```
+
+---
+
+## Security Best Practices
+
+### Creating User Accounts with Proper Roles
+
+```sql
+-- Consortium Partner user
+CREATE USER 'partner_user'@'localhost' IDENTIFIED BY 'secure_password_here';
+GRANT SELECT, INSERT, UPDATE, DELETE ON tasc_restoremed.* TO 'partner_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON tasc_restoremed.users TO 'partner_user'@'localhost';
+FLUSH PRIVILEGES;
+
+-- Read-only public user
+CREATE USER 'public_user'@'localhost' IDENTIFIED BY 'read_only_password';
+GRANT SELECT ON tasc_restoremed.projects TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.organizations TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.regions TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.thematic_clusters TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.keywords TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.funding_programs TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.solution_types TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.synergies TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.project_* TO 'public_user'@'localhost';
+GRANT SELECT ON tasc_restoremed.synergy_projects TO 'public_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue: Cannot insert project - foreign key constraint fails**
+```sql
+-- Check if coordinator organization exists
+SELECT organization_id FROM organizations WHERE organization_id = <your_id>;
+
+-- Check if funding program exists
+SELECT program_id FROM funding_programs WHERE program_id = <your_id>;
+```
+
+**Issue: Duplicate entry error**
+```sql
+-- Check for existing grant agreement number
+SELECT * FROM projects WHERE grant_agreement_number = 'YOUR_NUMBER';
+
+-- Update instead of insert
+UPDATE projects SET ... WHERE grant_agreement_number = 'YOUR_NUMBER';
+```
+
+**Issue: Slow queries**
+```sql
+-- Check if indexes are being used
+EXPLAIN SELECT ... [your query];
+
+-- Rebuild indexes
+OPTIMIZE TABLE projects;
+ANALYZE TABLE projects;
+```
+
+---
+
+## Contact & Support
+
+For technical support with the database:
+- **Task Lead:** FredU (Partner 6)
+- **Digital Tool Development:** INFOR
+- **Database Administrator:** [To be assigned]
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** November 18, 2025
