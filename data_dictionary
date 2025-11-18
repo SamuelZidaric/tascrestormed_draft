@@ -1,0 +1,683 @@
+# TASC-RestoreMed Task 4.1 Database - Data Dictionary
+
+**Project:** TASC-RestoreMed (Grant Agreement 101217661)  
+**Work Package:** WP4 - Communication, Dissemination & Community Building  
+**Task:** Task 4.1 - Identification, Categorisation and Clustering of Projects  
+**Database Version:** 1.0  
+**MySQL Version:** 5.7.4  
+**Date:** November 2025
+
+---
+
+## Table of Contents
+
+1. [Database Overview](#database-overview)
+2. [Entity Relationship Summary](#entity-relationship-summary)
+3. [Table Definitions](#table-definitions)
+4. [Index Strategy](#index-strategy)
+5. [Data Population Notes](#data-population-notes)
+
+---
+
+## Database Overview
+
+### Purpose
+This database supports the identification, categorization, and clustering of projects within the Mediterranean Lighthouse area aligned with Mission Ocean objectives. It extends the existing Portfolio Analysis database (841 H2020/HE projects) with new projects and provides an interactive dashboard for searching and analyzing projects.
+
+### Key Performance Indicators (KPI 4.1)
+1. At least 900 projects identified
+2. Creation of at least 5 thematic clusters
+3. At least 10 synergies between clustered projects identified and documented
+4. Creation and active use of digital tool
+
+### Database Characteristics
+- **Charset:** utf8mb4
+- **Collation:** utf8mb4_unicode_ci (full Unicode support including emojis)
+- **Storage Engine:** InnoDB (supports transactions and foreign keys)
+- **Total Tables:** 19
+
+---
+
+## Entity Relationship Summary
+
+### Core Entities
+- **projects** - Main entity storing all project information
+- **organizations** - Partner organizations and coordinators
+- **regions** - Geographic locations (countries, sea basins, sub-regions)
+- **thematic_clusters** - Thematic groupings of projects (KPI requirement: ≥5)
+- **synergies** - Documented synergies between projects (KPI requirement: ≥10)
+
+### Lookup/Reference Tables
+- **user_roles** - Access control roles
+- **users** - System users with role-based access
+- **funding_programs** - EU and other funding programmes
+- **solution_types** - Classification of solution types
+- **keywords** - Searchable tags and keywords
+
+### Junction Tables (Many-to-Many)
+- **project_organizations** - Links projects to multiple partner organizations
+- **project_regions** - Links projects to multiple geographic regions
+- **project_clusters** - Links projects to multiple thematic clusters
+- **project_keywords** - Links projects to multiple keywords
+- **synergy_projects** - Links synergies to multiple projects (2+ projects per synergy)
+
+### Supporting Tables
+- **search_logs** - Analytics and usage tracking
+
+---
+
+## Table Definitions
+
+### Table: user_roles
+
+**Purpose:** Define access levels for different types of users
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| role_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique role identifier |
+| role_name | VARCHAR(50) | NOT NULL, UNIQUE | Role name (e.g., 'Admin', 'Consortium Partner') |
+| role_description | TEXT | NULL | Detailed description of role |
+| can_view | BOOLEAN | DEFAULT TRUE | Permission to view records |
+| can_edit | BOOLEAN | DEFAULT FALSE | Permission to edit records |
+| can_delete | BOOLEAN | DEFAULT FALSE | Permission to delete records |
+| can_manage_users | BOOLEAN | DEFAULT FALSE | Permission to manage users |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Initial Data:**
+- Admin (full access)
+- Consortium Partner (view/edit/delete projects)
+- FSTP Project (view/edit own projects)
+- Public (read-only)
+
+---
+
+### Table: users
+
+**Purpose:** Store user accounts with role-based access control
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| user_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique user identifier |
+| username | VARCHAR(100) | NOT NULL, UNIQUE | Login username |
+| email | VARCHAR(255) | NOT NULL, UNIQUE | User email address |
+| password_hash | VARCHAR(255) | NOT NULL | Hashed password (use bcrypt/argon2) |
+| full_name | VARCHAR(255) | NULL | User's full name |
+| organization | VARCHAR(255) | NULL | User's organization |
+| role_id | INT | NOT NULL, FK → user_roles | User's role |
+| is_active | BOOLEAN | DEFAULT TRUE | Account active status |
+| last_login | TIMESTAMP | NULL | Last login timestamp |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Account creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Indexes:**
+- idx_username (username)
+- idx_email (email)
+- idx_role (role_id)
+
+---
+
+### Table: funding_programs
+
+**Purpose:** Reference table for EU and other funding programmes
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| program_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique programme identifier |
+| program_code | VARCHAR(50) | NOT NULL, UNIQUE | Short code (e.g., 'H2020', 'HE') |
+| program_name | VARCHAR(255) | NOT NULL | Full programme name |
+| program_description | TEXT | NULL | Programme description |
+| start_year | YEAR | NULL | Programme start year |
+| end_year | YEAR | NULL | Programme end year |
+| is_active | BOOLEAN | DEFAULT TRUE | Programme active status |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Initial Data:**
+- H2020 (Horizon 2020, 2014-2020)
+- HE (Horizon Europe, 2021-2027)
+- LIFE (LIFE Programme, 2021-2027)
+- OTHER (Other funding sources)
+
+**Index:**
+- idx_code (program_code)
+
+---
+
+### Table: solution_types
+
+**Purpose:** Classification of solution types for projects
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| solution_type_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique solution type identifier |
+| type_name | VARCHAR(100) | NOT NULL, UNIQUE | Solution type name |
+| type_description | TEXT | NULL | Description of solution type |
+| type_category | ENUM | DEFAULT 'Other' | Category: Technology, Approach, Sector, Other |
+| is_active | BOOLEAN | DEFAULT TRUE | Type active status |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Initial Data Includes:**
+- Technology: Digital Monitoring, Clean Technology, Renewable Energy
+- Approach: Community-Led Action, Research & Innovation, Pilot Demonstration, Policy & Governance
+- Sector: Fisheries, Aquaculture, Maritime Transport, Coastal Tourism, Port Operations, Conservation NGO
+
+**Index:**
+- idx_category (type_category)
+
+---
+
+### Table: regions
+
+**Purpose:** Geographic regions including Mediterranean countries and sea basins
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| region_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique region identifier |
+| region_name | VARCHAR(255) | NOT NULL | Region name |
+| region_code | VARCHAR(10) | NULL | ISO or custom region code |
+| country | VARCHAR(100) | NULL | Country name (if applicable) |
+| region_type | ENUM | DEFAULT 'Country' | Type: Country, Sea Basin, Sub-region, Coastal Zone |
+| parent_region_id | INT | NULL, FK → regions, self-reference | Parent region (for hierarchies) |
+| latitude | DECIMAL(10,7) | NULL | Geographic latitude |
+| longitude | DECIMAL(10,7) | NULL | Geographic longitude |
+| is_active | BOOLEAN | DEFAULT TRUE | Region active status |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Initial Data Includes:**
+- 22 Mediterranean countries
+- 8 sea basins (Western Med, Central Med, Eastern Med, Adriatic, Aegean, Ionian, Tyrrhenian, Balearic)
+
+**Indexes:**
+- idx_country (country)
+- idx_region_type (region_type)
+- idx_parent (parent_region_id)
+
+---
+
+### Table: thematic_clusters
+
+**Purpose:** Thematic groupings for project clustering (KPI 4.1 requirement: ≥5 clusters)
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| cluster_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique cluster identifier |
+| cluster_name | VARCHAR(255) | NOT NULL, UNIQUE | Cluster name |
+| cluster_description | TEXT | NULL | Detailed cluster description |
+| cluster_color | VARCHAR(7) | NULL | Hex color code for visualization (e.g., '#3498DB') |
+| cluster_icon | VARCHAR(50) | NULL | Icon identifier for UI display |
+| mission_alignment | TEXT | NULL | How cluster aligns with Mission Ocean objectives |
+| is_active | BOOLEAN | DEFAULT TRUE | Cluster active status |
+| created_by | INT | NULL, FK → users | User who created cluster |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Initial Data (7 clusters):**
+1. Pollution Prevention & Reduction
+2. Conservation & Restoration
+3. Sustainable Blue Economy
+4. Water Management
+5. Climate Adaptation & Mitigation
+6. Nature-Based Solutions
+7. Circular Economy
+
+**Index:**
+- idx_name (cluster_name)
+
+---
+
+### Table: organizations
+
+**Purpose:** Store all partner organizations and project coordinators
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| organization_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique organization identifier |
+| organization_name | VARCHAR(500) | NOT NULL | Full organization name |
+| organization_acronym | VARCHAR(50) | NULL | Organization acronym/short name |
+| organization_type | ENUM | DEFAULT 'Other' | Type: Academic, Research, NGO, Government, Private, International, Community, Other |
+| country | VARCHAR(100) | NULL | Organization's country |
+| city | VARCHAR(255) | NULL | Organization's city |
+| website | VARCHAR(500) | NULL | Organization website URL |
+| contact_email | VARCHAR(255) | NULL | General contact email |
+| is_consortium_partner | BOOLEAN | DEFAULT FALSE | TRUE if TASC-RestoreMed consortium partner |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Indexes:**
+- idx_name (organization_name, first 100 chars)
+- idx_acronym (organization_acronym)
+- idx_country (country)
+- idx_type (organization_type)
+
+---
+
+### Table: keywords
+
+**Purpose:** Searchable keywords/tags for project categorization
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| keyword_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique keyword identifier |
+| keyword_text | VARCHAR(255) | NOT NULL, UNIQUE | The keyword text |
+| keyword_category | VARCHAR(100) | NULL | Optional category grouping |
+| usage_count | INT | DEFAULT 0 | Number of projects using this keyword |
+| is_approved | BOOLEAN | DEFAULT TRUE | Approval status (for moderation) |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Indexes:**
+- idx_keyword (keyword_text)
+- idx_category (keyword_category)
+- idx_usage (usage_count) - for popular keywords
+
+---
+
+### Table: projects
+
+**Purpose:** Main table storing all project information (target: ≥900 projects)
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| project_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique project identifier |
+| **BASIC INFORMATION** |
+| project_title | VARCHAR(1000) | NOT NULL | Full project title |
+| project_acronym | VARCHAR(100) | NULL | Project acronym |
+| grant_agreement_number | VARCHAR(50) | UNIQUE | EU grant agreement number (if applicable) |
+| **PROGRAM & FUNDING** |
+| funding_program_id | INT | NULL, FK → funding_programs | Funding programme reference |
+| total_budget | DECIMAL(15,2) | NULL | Total project budget |
+| currency | VARCHAR(3) | DEFAULT 'EUR' | Currency code (ISO 4217) |
+| **TIMELINE** |
+| start_date | DATE | NULL | Project start date |
+| end_date | DATE | NULL | Project end date |
+| duration_months | INT | NULL | Project duration in months |
+| project_status | ENUM | DEFAULT 'Active' | Status: Planned, Active, Completed, Suspended, Closed |
+| **DESCRIPTION & CONTENT** |
+| abstract | TEXT | NULL | Project abstract/summary |
+| objectives | TEXT | NULL | Project objectives |
+| expected_outcomes | TEXT | NULL | Expected project outcomes |
+| **SOLUTION CLASSIFICATION** |
+| solution_type_id | INT | NULL, FK → solution_types | Type of solution |
+| **COORDINATOR** |
+| coordinator_organization_id | INT | NULL, FK → organizations | Coordinating organization |
+| coordinator_contact_name | VARCHAR(255) | NULL | Coordinator contact person |
+| coordinator_contact_email | VARCHAR(255) | NULL | Coordinator email |
+| **LINKS & RESOURCES** |
+| website | VARCHAR(500) | NULL | Project website URL |
+| cordis_link | VARCHAR(500) | NULL | CORDIS database link |
+| documentation_url | VARCHAR(500) | NULL | Additional documentation URL |
+| **MISSION ALIGNMENT** |
+| mission_alignment | TEXT | NULL | How project aligns with Mission Ocean |
+| eu_directive_alignment | SET | NULL | EU Directives: Birds, Habitats, MSFD, WFD, Other |
+| **COMMUNITY-LED INDICATORS** |
+| is_community_led | BOOLEAN | DEFAULT FALSE | TRUE if community-led action |
+| community_description | TEXT | NULL | Description of community involvement |
+| **DEPLOYMENT POTENTIAL** |
+| deployment_stage | ENUM | DEFAULT 'Research' | Stage: Concept, Research, Pilot, Demonstration, Deployed, Scaled |
+| replication_potential | ENUM | DEFAULT 'Medium' | Potential: Low, Medium, High, Very High |
+| **DATA SOURCE** |
+| data_source | VARCHAR(100) | DEFAULT 'Portfolio Analysis 2023' | Original data source |
+| verified | BOOLEAN | DEFAULT FALSE | Verification status |
+| verified_by | INT | NULL, FK → users | User who verified |
+| verified_date | TIMESTAMP | NULL | Verification timestamp |
+| **METADATA** |
+| created_by | INT | NULL, FK → users | User who created record |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_by | INT | NULL, FK → users | User who last updated record |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Indexes:**
+- idx_title (project_title, first 100 chars)
+- idx_acronym (project_acronym)
+- idx_grant (grant_agreement_number)
+- idx_status (project_status)
+- idx_dates (start_date, end_date)
+- idx_program (funding_program_id)
+- idx_solution_type (solution_type_id)
+- idx_coordinator (coordinator_organization_id)
+- idx_community_led (is_community_led)
+- idx_deployment (deployment_stage)
+- idx_fulltext (project_title, abstract, objectives) - FULLTEXT for advanced search
+
+---
+
+### Table: project_organizations
+
+**Purpose:** Many-to-many relationship between projects and partner organizations
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| project_org_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique relationship identifier |
+| project_id | INT | NOT NULL, FK → projects | Project reference |
+| organization_id | INT | NOT NULL, FK → organizations | Organization reference |
+| role_in_project | ENUM | DEFAULT 'Partner' | Role: Coordinator, Partner, Associated Partner, Subcontractor, Other |
+| contribution_description | TEXT | NULL | Organization's contribution to project |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+
+**Constraints:**
+- UNIQUE (project_id, organization_id) - prevents duplicate partnerships
+
+**Indexes:**
+- idx_project (project_id)
+- idx_organization (organization_id)
+- idx_role (role_in_project)
+
+---
+
+### Table: project_regions
+
+**Purpose:** Many-to-many relationship between projects and geographic regions
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| project_region_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique relationship identifier |
+| project_id | INT | NOT NULL, FK → projects | Project reference |
+| region_id | INT | NOT NULL, FK → regions | Region reference |
+| is_primary_region | BOOLEAN | DEFAULT FALSE | TRUE if primary/main region |
+| coverage_description | TEXT | NULL | Description of coverage in this region |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+
+**Constraints:**
+- UNIQUE (project_id, region_id) - prevents duplicate region assignments
+
+**Indexes:**
+- idx_project (project_id)
+- idx_region (region_id)
+- idx_primary (is_primary_region)
+
+---
+
+### Table: project_clusters
+
+**Purpose:** Many-to-many relationship between projects and thematic clusters
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| project_cluster_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique relationship identifier |
+| project_id | INT | NOT NULL, FK → projects | Project reference |
+| cluster_id | INT | NOT NULL, FK → thematic_clusters | Cluster reference |
+| is_primary_cluster | BOOLEAN | DEFAULT FALSE | TRUE if primary/main cluster |
+| relevance_score | DECIMAL(3,2) | DEFAULT 1.00 | Relevance score (0.00 to 1.00) |
+| assignment_rationale | TEXT | NULL | Rationale for cluster assignment |
+| assigned_by | INT | NULL, FK → users | User who assigned cluster |
+| assigned_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Assignment timestamp |
+
+**Constraints:**
+- UNIQUE (project_id, cluster_id) - prevents duplicate cluster assignments
+
+**Indexes:**
+- idx_project (project_id)
+- idx_cluster (cluster_id)
+- idx_primary (is_primary_cluster)
+- idx_relevance (relevance_score)
+
+---
+
+### Table: project_keywords
+
+**Purpose:** Many-to-many relationship between projects and keywords
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| project_keyword_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique relationship identifier |
+| project_id | INT | NOT NULL, FK → projects | Project reference |
+| keyword_id | INT | NOT NULL, FK → keywords | Keyword reference |
+| source | ENUM | DEFAULT 'Manual' | Source: Original, Manual, Auto-Generated, Community-Added |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+
+**Constraints:**
+- UNIQUE (project_id, keyword_id) - prevents duplicate keyword assignments
+
+**Indexes:**
+- idx_project (project_id)
+- idx_keyword (keyword_id)
+- idx_source (source)
+
+---
+
+### Table: synergies
+
+**Purpose:** Document synergies between projects (KPI 4.1 requirement: ≥10 synergies)
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| synergy_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique synergy identifier |
+| synergy_title | VARCHAR(500) | NOT NULL | Descriptive title for synergy |
+| synergy_type | ENUM | DEFAULT 'Other' | Type: Shared Methodology, Complementary Goals, Resource Sharing, Geographic Overlap, Technology Transfer, Knowledge Exchange, Joint Activities, Other |
+| description | TEXT | NOT NULL | Detailed description of synergy |
+| potential_impact | TEXT | NULL | Expected impact of synergy |
+| synergy_status | ENUM | DEFAULT 'Identified' | Status: Identified, Under Review, Confirmed, Active, Completed, Discontinued |
+| **IDENTIFICATION INFO** |
+| identified_by | INT | NULL, FK → users | User who identified synergy |
+| identified_by_organization | INT | NULL, FK → organizations | Organization that identified synergy |
+| identified_date | DATE | NULL | Date synergy was identified |
+| **FOLLOW-UP INFO** |
+| contact_person_name | VARCHAR(255) | NULL | Contact person for synergy |
+| contact_person_email | VARCHAR(255) | NULL | Contact email |
+| action_items | TEXT | NULL | Follow-up actions needed |
+| notes | TEXT | NULL | Additional notes |
+| **METADATA** |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+| updated_at | TIMESTAMP | ON UPDATE CURRENT_TIMESTAMP | Last update timestamp |
+
+**Indexes:**
+- idx_type (synergy_type)
+- idx_status (synergy_status)
+- idx_date (identified_date)
+
+---
+
+### Table: synergy_projects
+
+**Purpose:** Many-to-many relationship linking synergies to projects (2+ projects per synergy)
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| synergy_project_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique relationship identifier |
+| synergy_id | INT | NOT NULL, FK → synergies | Synergy reference |
+| project_id | INT | NOT NULL, FK → projects | Project reference |
+| role_description | TEXT | NULL | How this project contributes to synergy |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |
+
+**Constraints:**
+- UNIQUE (synergy_id, project_id) - prevents duplicate project-synergy links
+
+**Indexes:**
+- idx_synergy (synergy_id)
+- idx_project (project_id)
+
+**Note:** A valid synergy must link at least 2 projects. This should be enforced at application level.
+
+---
+
+### Table: search_logs
+
+**Purpose:** Track dashboard usage and search patterns for analytics
+
+| Field Name | Data Type | Constraints | Description |
+|------------|-----------|-------------|-------------|
+| log_id | INT | PRIMARY KEY, AUTO_INCREMENT | Unique log entry identifier |
+| user_id | INT | NULL, FK → users | User who performed search (NULL if anonymous) |
+| session_id | VARCHAR(100) | NULL | Browser session identifier |
+| search_type | ENUM | NOT NULL | Type: Keyword, Region, Cluster, Organization, Solution Type, Advanced, Full Text |
+| search_query | TEXT | NULL | The search query or keywords |
+| filters_applied | JSON | NULL | JSON object storing complex filter combinations |
+| results_count | INT | NULL | Number of results returned |
+| user_ip | VARCHAR(45) | NULL | User's IP address (supports IPv6) |
+| user_agent | VARCHAR(500) | NULL | Browser user agent string |
+| search_timestamp | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | When search was performed |
+
+**Indexes:**
+- idx_timestamp (search_timestamp)
+- idx_user (user_id)
+- idx_type (search_type)
+
+**Privacy Note:** Personal data should be handled according to GDPR requirements. Consider data retention policies.
+
+---
+
+## Index Strategy
+
+### Primary Keys
+All tables have auto-incrementing integer primary keys for optimal join performance.
+
+### Foreign Key Indexes
+All foreign key columns are indexed to optimize JOIN operations.
+
+### Search Optimization Indexes
+- **projects.idx_fulltext**: FULLTEXT index on title, abstract, objectives for advanced text search
+- **keywords.idx_keyword**: Fast keyword lookups
+- **organizations.idx_name**: Partial index (100 chars) for organization name searches
+
+### Performance Indexes
+- **project_clusters.idx_relevance**: Enables sorting by relevance score
+- **keywords.idx_usage**: Identifies most popular keywords
+- **search_logs.idx_timestamp**: Enables time-based analytics queries
+
+### Composite Indexes
+Junction tables use composite indexes on both foreign keys for bidirectional query optimization.
+
+---
+
+## Data Population Notes
+
+### Phase 1: Initial Setup (Month 1)
+1. Create database schema
+2. Populate reference tables (user_roles, funding_programs, solution_types, thematic_clusters, regions)
+3. Create admin user account
+
+### Phase 2: Historical Data Migration (Month 1-2)
+1. Import 841 projects from Portfolio Analysis 2023 report
+2. Extract and populate organizations from existing data
+3. Create keyword taxonomy from existing project keywords
+4. Assign projects to initial thematic clusters
+
+### Phase 3: New Data Collection (Month 2-5)
+1. Identify and add new projects (target: 100+ additional projects for total ≥900)
+2. Verify and enrich existing project data
+3. Document synergies between projects (target: ≥10)
+4. Enable dashboard for consortium partner use
+
+### Data Quality Guidelines
+
+**Required Fields for Valid Project:**
+- project_title (mandatory)
+- At least one of: project_acronym OR grant_agreement_number
+- funding_program_id (should not be NULL)
+- coordinator_organization_id (should not be NULL)
+- At least one region via project_regions table
+- At least one thematic cluster via project_clusters table
+
+**Validation Rules:**
+- end_date must be >= start_date
+- duration_months should match calculated difference between dates
+- total_budget should be positive if provided
+- At least one organization should have role_in_project = 'Coordinator'
+- Each synergy must link at least 2 projects
+
+**Data Entry Best Practices:**
+1. Use consistent naming conventions for organizations
+2. Prefer existing keywords before creating new ones
+3. Verify grant agreement numbers against CORDIS
+4. Include website URLs for all projects when available
+5. Mark community-led projects explicitly (is_community_led = TRUE)
+6. Document data sources in data_source field
+
+---
+
+## KPI Tracking Queries
+
+### KPI 4.1.1: Count Total Projects
+```sql
+SELECT COUNT(*) as total_projects FROM projects WHERE verified = TRUE;
+```
+**Target:** ≥ 900
+
+### KPI 4.1.2: Count Active Thematic Clusters
+```sql
+SELECT COUNT(*) as active_clusters FROM thematic_clusters WHERE is_active = TRUE;
+```
+**Target:** ≥ 5
+
+### KPI 4.1.3: Count Documented Synergies
+```sql
+SELECT COUNT(*) as documented_synergies 
+FROM synergies 
+WHERE synergy_status IN ('Confirmed', 'Active', 'Completed');
+```
+**Target:** ≥ 10
+
+### KPI 4.1.4: Dashboard Usage
+```sql
+SELECT 
+    COUNT(DISTINCT user_id) as unique_users,
+    COUNT(*) as total_searches,
+    search_type,
+    DATE(search_timestamp) as search_date
+FROM search_logs
+GROUP BY search_date, search_type
+ORDER BY search_date DESC;
+```
+**Target:** Active and regular use by consortium partners and public users
+
+---
+
+## Maintenance Recommendations
+
+### Regular Tasks
+- **Weekly:** Review and approve new keywords (is_approved = FALSE)
+- **Monthly:** Update usage_count for keywords
+- **Monthly:** Verify project statuses and update completed projects
+- **Quarterly:** Archive old search logs (>1 year) for performance
+
+### Backup Strategy
+- **Daily:** Incremental backups
+- **Weekly:** Full database backup
+- **Before Migration:** Full backup before importing batch data
+
+### Performance Monitoring
+- Monitor slow queries (execution time > 2 seconds)
+- Review index usage and add indexes for frequently used query patterns
+- Monitor table sizes and consider partitioning if projects table grows beyond 50,000 records
+
+---
+
+## Security Considerations
+
+1. **Password Storage:** Always use bcrypt or Argon2 for password hashing (never store plain text)
+2. **SQL Injection:** Use parameterized queries/prepared statements
+3. **Access Control:** Enforce role-based permissions at application layer
+4. **Data Privacy:** Implement GDPR-compliant data retention and deletion policies
+5. **Audit Logging:** Consider additional audit_log table for sensitive operations
+6. **Backups:** Encrypt backup files and store securely off-site
+
+---
+
+## Future Extensions (Not in Current Scope)
+
+Potential enhancements for future versions:
+- **Deliverables tracking** (linked to WP2 business plans)
+- **Timeline visualization** (Gantt-style project timelines)
+- **Budget analysis** (aggregate funding by region, cluster, type)
+- **Impact metrics** (linked to WP3 impact assessments)
+- **Document repository** (store project documents, reports, presentations)
+- **GIS integration** (map-based project visualization)
+- **API endpoints** (RESTful API for external integrations)
+- **Multi-language support** (project titles/descriptions in multiple languages)
+
+---
+
+## Contact Information
+
+**Database Administrator:** [To be assigned]  
+**Technical Lead:** INFOR (Partner for digital tool development)  
+**Task Lead:** FredU (Partner 6)  
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** November 18, 2025  
+**Next Review:** January 2026
