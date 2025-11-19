@@ -2,7 +2,7 @@
 // Generated: 2025-11-19 13:43:15
 // Total records: 950
 
-const projects = [
+export const projects = [
   {
     "id": 1,
     "acronym": "RESTORE-HUB",
