@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TASC-RestoreMed · Mission Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              azure: "#1d4ed8",
+              teal: "#0f766e",
+              coral: "#f97316",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-800" data-page="dashboard">
+    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-500">EU Mission · Restore our Oceans &amp; Waters</p>
+          <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">Mission Portfolio Snapshot</h1>
+        </div>
+        <nav class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <a href="index.html" class="rounded-full px-4 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-600">Projects</a>
+          <a href="partners.html" class="rounded-full px-4 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-600">Partners</a>
+          <a href="dashboard.html" class="rounded-full bg-blue-600 px-4 py-2 text-white shadow transition hover:bg-blue-700">Dashboard</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section id="dashboardMetrics" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"></section>
+      <section class="grid gap-6 lg:grid-cols-2">
+        <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">Mission pillar coverage</h2>
+          <ul id="pillarCoverage" class="mt-4 space-y-3 text-sm text-slate-600"></ul>
+        </article>
+        <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow">
+          <div class="flex flex-wrap items-baseline justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">Technology pillars</h2>
+            <span class="text-xs text-slate-400">Projects per technology category</span>
+          </div>
+          <div class="mt-6 flex justify-center">
+            <canvas id="techPillarChart" class="max-h-72 w-full"></canvas>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+    <script src="projects.js" defer></script>
+    <script src="partners.js" defer></script>
+    <script src="script.js" defer></script>
+  </body>
+</html>

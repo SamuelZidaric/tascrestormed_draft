@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TASC-RestoreMed · Project Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              azure: "#1d4ed8",
+              teal: "#0f766e",
+              coral: "#f97316",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-800" data-page="projects">
+    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-semibold text-white shadow-lg">TR</span>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.32em] text-blue-500">EU Mission · Restore our Oceans &amp; Waters</p>
+            <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">TASC-RestoreMed Project Explorer</h1>
+          </div>
+        </div>
+        <nav class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <a href="index.html" class="rounded-full bg-blue-600 px-4 py-2 text-white shadow transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">Projects</a>
+          <a href="partners.html" class="rounded-full px-4 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-600">Partners</a>
+          <a href="dashboard.html" class="rounded-full px-4 py-2 text-slate-400 transition hover:bg-blue-50 hover:text-blue-500">Dashboard (beta)</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <section class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">Cross-filter 2030 mission projects</h2>
+            <p class="mt-1 max-w-2xl text-sm text-slate-600">
+              Combine advanced filters across mission pillars, objectives, topic clusters, and technology pillars.
+              Use search to query titles, acronyms, partners, and keywords at once.
+            </p>
+          </div>
+          <div class="flex flex-col gap-2 text-xs text-slate-500">
+            <span id="projectResultsCount">Loading...</span>
+            <span id="projectSelectedCount">None selected</span>
+          </div>
+        </div>
+        <div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div class="relative flex-1">
+            <label for="projectSearch" class="sr-only">Advanced search</label>
+            <input
+              id="projectSearch"
+              type="search"
+              placeholder="Search by title, acronym, partner, objectives, keywords..."
+              class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              autocomplete="off"
+            />
+            <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-300">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m21 21-5.2-5.2M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" />
+              </svg>
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              id="compareSelectedProjects"
+              class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 13c3 0 5-2 6-5 1 3 3 5 6 5M6 7h12M6 17h12" />
+              </svg>
+              Compare selected
+            </button>
+            <button
+              type="button"
+              id="exportProjects"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-blue-400 hover:text-blue-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 12l-4 4m0 0-4-4m4 4V4" />
+              </svg>
+              Export to Excel
+            </button>
+            <button
+              type="button"
+              id="resetProjectFilters"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-blue-400 hover:text-blue-600"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+        <p id="compareHint" class="mt-2 text-xs text-slate-500">Select at least two projects to compare.</p>
+        <div id="projectFilters" class="mt-6 flex flex-wrap gap-2" aria-label="Project filters"></div>
+      </section>
+
+      <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th scope="col" class="px-3 py-3">Compare</th>
+                <th scope="col" class="px-3 py-3">Project</th>
+                <th scope="col" class="px-3 py-3">Acronym</th>
+                <th scope="col" class="px-3 py-3">Status</th>
+                <th scope="col" class="px-3 py-3">Timeline</th>
+                <th scope="col" class="px-3 py-3">Lead</th>
+                <th scope="col" class="px-3 py-3">Mission Zone</th>
+                <th scope="col" class="px-3 py-3">Mission Pillars</th>
+                <th scope="col" class="px-3 py-3">Objectives &amp; Tech</th>
+              </tr>
+            </thead>
+            <tbody id="projectTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+        <div id="projectEmptyState" class="hidden border-t border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center">
+          <h2 class="text-lg font-semibold text-slate-900">No projects match your selection</h2>
+          <p class="mt-2 text-sm text-slate-500">Adjust the filters or clear the search to rediscover mission initiatives.</p>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="compareModal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 px-4 py-8 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="compareModalTitle"
+    >
+      <div class="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <header class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
+          <div>
+            <h2 id="compareModalTitle" class="text-lg font-semibold text-slate-900">Project comparison</h2>
+            <p class="text-xs text-slate-500">Benchmark selected projects across KPIs, mission focus, and technology emphasis.</p>
+            <p id="compareModalHint" class="mt-1 text-xs text-slate-400"></p>
+          </div>
+          <button
+            type="button"
+            id="closeCompareModal"
+            class="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-blue-400 hover:text-blue-600"
+            aria-label="Close comparison"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M4.22 4.22a.75.75 0 0 1 1.06 0L10 8.94l4.72-4.72a.75.75 0 0 1 1.06 1.06L11.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 0 1-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 0 1 0-1.06Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </header>
+        <div class="max-h-[70vh] overflow-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50" id="compareTableHead"></thead>
+            <tbody id="compareTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+    <script src="projects.js" defer></script>
+    <script src="partners.js" defer></script>
+    <script src="script.js" defer></script>
+  </body>
+</html>
