@@ -1,0 +1,11 @@
+# Python dependencies for EU Projects Database simulation
+
+# Web framework
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Database
+# SQLite is included in Python standard library
+
+# Development tools (optional)
+Werkzeug==3.0.1

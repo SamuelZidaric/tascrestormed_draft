@@ -1,18 +1,71 @@
 # EU Projects Database
 
-A comprehensive MySQL database for managing EU-funded project data from multiple programmes including Horizon 2020, Horizon Europe, Interreg, LIFE, and ERDF.
+A comprehensive database for managing EU-funded project data from multiple programmes including Horizon 2020, Horizon Europe, Interreg, LIFE, and ERDF.
+
+## 🎯 Two Deployment Options
+
+This repository includes **two versions** of the database:
+
+### 1. 🚀 **Simulation Version** (Recommended for Development/Demo)
+**Self-contained, portable SQLite database with mock data**
+
+- ✅ No database server needed
+- ✅ One-command setup
+- ✅ 950+ realistic mock projects
+- ✅ Includes REST API server
+- ✅ Perfect for demos and development
+
+**[→ Start with Simulation (SIMULATION_README.md)](SIMULATION_README.md)**
+
+```bash
+./setup_simulation.sh    # One command to set everything up
+python3 api_server.py    # Start the API server
+```
+
+### 2. 🏭 **Production Version** (For Real Deployment)
+**MySQL database schema for production environments**
+
+- MySQL 5.7.4+ required
+- Optimized for large-scale data
+- Production-ready schema
+- Advanced indexing and views
+
+**[→ Production Setup (MySQL)]()**
+
+```bash
+./setup_database.sh      # MySQL installation required
+```
+
+---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
+- [Quick Start (Simulation)](#quick-start-simulation)
+- [Quick Start (Production)](#quick-start-production)
 - [Database Structure](#database-structure)
-- [Quick Start](#quick-start)
 - [Files Description](#files-description)
-- [Installation](#installation)
 - [Usage](#usage)
 - [Data Import](#data-import)
 - [Maintenance](#maintenance)
 - [Troubleshooting](#troubleshooting)
+
+## Quick Start (Simulation)
+
+**For development, testing, and demonstrations:**
+
+```bash
+cd database/
+./setup_simulation.sh
+python3 api_server.py
+```
+
+✅ Database ready in under 1 minute!
+✅ API available at http://localhost:5000
+✅ 950+ projects with realistic data
+
+**[Full Simulation Documentation →](SIMULATION_README.md)**
+
+## Quick Start (Production)
 
 ## Overview
 
