@@ -11,10 +11,12 @@ from pathlib import Path
 
 # Configuration
 NUM_PROJECTS = 950
-OUTPUT_DIR = Path(__file__).parent.parent / 'react_mock_elazem' / 'data'
+OUTPUT_DIR_REACT = Path(__file__).parent.parent / 'react_mock_elazem' / 'data'
+OUTPUT_DIR_HTML = Path(__file__).parent.parent / 'html_mock_elazem'
 
-# Ensure output directory exists
-OUTPUT_DIR.mkdir(exist_ok=True)
+# Ensure output directories exist
+OUTPUT_DIR_REACT.mkdir(exist_ok=True)
+OUTPUT_DIR_HTML.mkdir(exist_ok=True)
 
 # Data pools for realistic generation
 PROGRAMMES = [
@@ -344,14 +346,28 @@ def generate_projects():
     return projects, partners_all, deliverables_all, publications_all
 
 def write_typescript_file(filename, data, type_name):
-    """Write data as TypeScript file"""
-    filepath = OUTPUT_DIR / filename
+    """Write data as TypeScript file for React"""
+    filepath = OUTPUT_DIR_REACT / filename
 
     with open(filepath, 'w') as f:
         f.write(f"// Auto-generated realistic dummy data for simulation\n")
         f.write(f"// Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"// Total records: {len(data)}\n\n")
         f.write(f"export const {type_name} = ")
+        f.write(json.dumps(data, indent=2))
+        f.write(";\n")
+
+    print(f"✓ Wrote {filepath} ({len(data)} records)")
+
+def write_javascript_file(filename, data, type_name):
+    """Write data as JavaScript file for HTML version"""
+    filepath = OUTPUT_DIR_HTML / filename
+
+    with open(filepath, 'w') as f:
+        f.write(f"// Auto-generated realistic dummy data for simulation\n")
+        f.write(f"// Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"// Total records: {len(data)}\n\n")
+        f.write(f"const {type_name} = ")
         f.write(json.dumps(data, indent=2))
         f.write(";\n")
 
@@ -366,12 +382,19 @@ def main():
     # Generate all data
     projects, partners, deliverables, publications = generate_projects()
 
-    # Write TypeScript files
-    print("\nWriting TypeScript files...")
+    # Write TypeScript files (for React)
+    print("\nWriting TypeScript files for React...")
     write_typescript_file('projects.ts', projects, 'projects')
     write_typescript_file('partners.ts', partners, 'partners')
     write_typescript_file('deliverables.ts', deliverables, 'deliverables')
     write_typescript_file('publications.ts', publications, 'publications')
+
+    # Write JavaScript files (for HTML)
+    print("\nWriting JavaScript files for HTML...")
+    write_javascript_file('projects.js', projects, 'projects')
+    write_javascript_file('partners.js', partners, 'partners')
+    write_javascript_file('deliverables.js', deliverables, 'deliverables')
+    write_javascript_file('publications.js', publications, 'publications')
 
     # Generate summary stats
     stats = {
@@ -398,17 +421,24 @@ def main():
         stats['projectsByCountry'][country] = stats['projectsByCountry'].get(country, 0) + 1
 
     write_typescript_file('stats.ts', stats, 'stats')
+    write_javascript_file('stats.js', stats, 'stats')
 
     print("\n" + "="*60)
     print("DATA GENERATION COMPLETE!")
     print("="*60)
-    print(f"\nFiles created in: {OUTPUT_DIR}")
+    print(f"\nReact files (TypeScript) in: {OUTPUT_DIR_REACT}")
     print(f"  • projects.ts ({len(projects)} projects)")
     print(f"  • partners.ts ({len(partners)} partners)")
     print(f"  • deliverables.ts ({len(deliverables)} deliverables)")
     print(f"  • publications.ts ({len(publications)} publications)")
     print(f"  • stats.ts (summary statistics)")
-    print("\n✓ Ready to use in React app!\n")
+    print(f"\nHTML files (JavaScript) in: {OUTPUT_DIR_HTML}")
+    print(f"  • projects.js ({len(projects)} projects)")
+    print(f"  • partners.js ({len(partners)} partners)")
+    print(f"  • deliverables.js ({len(deliverables)} deliverables)")
+    print(f"  • publications.js ({len(publications)} publications)")
+    print(f"  • stats.js (summary statistics)")
+    print("\n✓ Ready to use in both React and HTML versions!\n")
 
 if __name__ == '__main__':
     main()

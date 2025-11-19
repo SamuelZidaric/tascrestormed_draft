@@ -2,7 +2,7 @@
 // Generated: 2025-11-19 13:43:15
 // Total records: 7
 
-export const stats = {
+const stats = {
   "totalProjects": 950,
   "totalPartners": 6020,
   "totalDeliverables": 1514,

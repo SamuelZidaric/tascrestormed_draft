@@ -2,7 +2,7 @@
 // Generated: 2025-11-19 13:43:15
 // Total records: 6020
 
-export const partners = [
+const partners = [
   {
     "id": 1,
     "projectId": 1,

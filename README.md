@@ -1,10 +1,10 @@
 # EU Projects Portal - Simulation Environment
 
-**A self-contained, locally-runnable demonstration of an EU-funded projects portal with 950+ realistic projects**
+**Two complete, locally-runnable versions of an EU-funded projects portal with 950+ realistic projects**
 
 ## 🎯 What Is This?
 
-This is a **complete simulation** of a searchable portal for EU-funded projects across multiple programmes (Horizon 2020, Horizon Europe, LIFE, Interreg, ERDF). It runs entirely on your local machine with realistic dummy data baked in - no backend server, no database, no API calls needed.
+This repository contains **two complete implementations** of a searchable portal for EU-funded projects across multiple programmes (Horizon 2020, Horizon Europe, LIFE, Interreg, ERDF). Both share the same realistic dummy data and run entirely on your local machine.
 
 Perfect for:
 - 🎨 **Demonstrations** to stakeholders
@@ -12,19 +12,51 @@ Perfect for:
 - 📚 **Learning** about EU project data structures
 - 🚀 **Prototyping** portal features
 
-## ⚡ Quick Start (2 Steps)
-
-### Step 1: Install Node.js (if you haven't already)
-
-Download from: https://nodejs.org/ (LTS version recommended)
-
-### Step 2: Run the Simulation
+## ⚡ Quick Start (One Command!)
 
 ```bash
-./run_simulation.sh
+./start_portal.sh
 ```
 
-That's it! The portal will open automatically in your browser at **http://localhost:5173**
+This launches an interactive menu where you choose:
+- **Option 1:** HTML Version (simple, no build needed)
+- **Option 2:** React Version (modern, full-featured)
+
+## 🎨 Two Versions Available
+
+### 1. 📄 HTML Version (Pure HTML/JS/CSS)
+
+**Best for:** Quick demos, simple deployment, no build tools
+
+✅ Pure HTML/JavaScript/CSS
+✅ No build step required
+✅ No dependencies to install
+✅ Opens directly in browser
+✅ Works with Python's built-in web server
+
+**Start:** `./start_portal.sh` → Choose option 1
+**URL:** http://localhost:8000
+
+### 2. ⚛️ React Version (Modern Stack)
+
+**Best for:** Development, advanced features, better UX
+
+✅ React 18 + TypeScript
+✅ Vite for fast hot reload
+✅ Tailwind CSS styling
+✅ Advanced component structure
+✅ Better performance
+
+**Start:** `./start_portal.sh` → Choose option 2
+**URL:** http://localhost:5173
+
+### Both Versions Share:
+
+- ✅ **Same 950 projects** with identical data
+- ✅ **Same 6,000+ partners**
+- ✅ **Same 1,500+ deliverables**
+- ✅ **Same 500+ publications**
+- ✅ **Same features** (search, filter, export, compare)
 
 ## 📦 What You Get
 
@@ -37,9 +69,9 @@ That's it! The portal will open automatically in your browser at **http://localh
   - Interreg Mediterranean (10%)
   - ERDF (10%)
 
-- **6,215 Partners/Beneficiaries** from 18 Mediterranean countries
-- **1,470 Deliverables** (reports, software, datasets, toolkits, etc.)
-- **541 Publications** in scientific journals
+- **6,000+ Partners/Beneficiaries** from 18 Mediterranean countries
+- **1,500+ Deliverables** (reports, software, datasets, toolkits)
+- **500+ Publications** in scientific journals
 
 ### Full Portal Features
 
@@ -58,69 +90,93 @@ That's it! The portal will open automatically in your browser at **http://localh
 ```
 tascrestormed_draft/
 │
-├── run_simulation.sh          ← START HERE! Run this script
+├── start_portal.sh            ← START HERE! Unified launcher
+├── run_simulation.sh          ← Alternate: Direct React launcher
 │
-├── react_mock_elazem/         ← React application (main portal)
-│   ├── data/                  ← Realistic dummy data (auto-generated)
-│   │   ├── projects.ts        ← 950 projects
-│   │   ├── partners.ts        ← 6,215 partners
-│   │   ├── deliverables.ts    ← 1,470 deliverables
-│   │   ├── publications.ts    ← 541 publications
-│   │   └── stats.ts           ← Summary statistics
+├── html_mock_elazem/          ← HTML/JS version
+│   ├── index.html             ← Projects page
+│   ├── partners.html          ← Partners page
+│   ├── dashboard.html         ← Dashboard
+│   ├── projects.js            ← 950 projects data
+│   ├── partners.js            ← 6,000+ partners data
+│   ├── deliverables.js        ← 1,500+ deliverables
+│   ├── publications.js        ← 500+ publications
+│   └── script.js              ← Main JavaScript logic
+│
+├── react_mock_elazem/         ← React/TypeScript version
+│   ├── data/                  ← Same data in TypeScript format
+│   │   ├── projects.ts
+│   │   ├── partners.ts
+│   │   ├── deliverables.ts
+│   │   ├── publications.ts
+│   │   └── stats.ts
 │   ├── components/            ← React components
-│   ├── utils/                 ← Utility functions
+│   ├── utils/                 ← Utilities
 │   └── package.json           ← Dependencies
 │
-├── database/                  ← Database schemas & documentation
-│   ├── schema_sqlite.sql      ← SQLite schema (if you want a DB)
-│   ├── schema_enhanced.sql    ← MySQL schema (production)
-│   ├── generate_react_data.py ← Script that generated the dummy data
-│   ├── DATA_DICTIONARY.md     ← Complete field documentation
-│   └── README.md              ← Database documentation
+├── database/                  ← Database schemas & tools
+│   ├── generate_react_data.py ← Data generator (creates both JS & TS)
+│   ├── schema_sqlite.sql      ← SQLite schema
+│   ├── schema_enhanced.sql    ← MySQL schema
+│   └── DATA_DICTIONARY.md     ← Field documentation
 │
-├── archive/                   ← Archived prototypes
-│   └── html_mock_elazem/      ← Early HTML prototype (not used)
-│
-└── Documentation files
+└── Documentation/             ← Planning docs
     ├── IMPLEMENTATION_PLAN.md
-    ├── IMPLEMENTATION_ROADMAP.md
-    ├── IMPLEMENTATION_STATUS.md
-    └── Other planning docs
+    └── IMPLEMENTATION_STATUS.md
 ```
 
-## 🚀 Usage
+## 🚀 Detailed Usage
 
-### Running the Portal
+### Option 1: Unified Launcher (Recommended)
 
 ```bash
-# Method 1: Use the run script (recommended)
-./run_simulation.sh
+./start_portal.sh
+```
 
-# Method 2: Manual start
+Choose your preferred version from the menu.
+
+### Option 2: Direct Launch
+
+#### HTML Version
+```bash
+cd html_mock_elazem
+python3 -m http.server 8000
+# Open http://localhost:8000
+```
+
+#### React Version
+```bash
 cd react_mock_elazem
-npm install
+npm install    # First time only
 npm run dev
+# Open http://localhost:5173
 ```
 
-The portal will be available at: **http://localhost:5173**
+## 🔄 Regenerating Data
 
-### Regenerating Data
-
-Want different dummy data? Regenerate it:
+Want fresh dummy data with different names and organizations?
 
 ```bash
-cd database
-python3 generate_react_data.py
+python3 database/generate_react_data.py
 ```
 
-This will create fresh realistic data with different project names, organizations, etc.
+This generates **both** JavaScript (for HTML) and TypeScript (for React) files with:
+- New random project names and acronyms
+- Different organizations and partners
+- Fresh budgets and dates
+- All new deliverables and publications
 
-### Customizing Data
+**Same realistic patterns, different data!**
 
-Edit `database/generate_react_data.py` to:
-- Change `NUM_PROJECTS = 950` to generate more/fewer projects
-- Modify country lists, organization types, keywords, etc.
-- Adjust data generation logic
+### Customizing Data Generation
+
+Edit `database/generate_react_data.py`:
+
+```python
+NUM_PROJECTS = 950          # Change number of projects
+COUNTRIES = [...]           # Modify country list
+KEYWORDS = [...]            # Add/remove keywords
+```
 
 Then regenerate:
 ```bash
@@ -138,149 +194,121 @@ Each project includes:
 - Lead Partner, Country, City
 
 ### Classifications
-- Mission Pillars (pollution prevention, conservation, blue economy, etc.)
-- Objectives (ecosystem protection, resource management, etc.)
-- Clusters (blue biotech, renewable energy, fisheries, etc.)
-- Technologies (AI/ML, IoT, GIS, remote sensing, etc.)
-- Keywords (30+ searchable tags)
+- **Mission Pillars:** Pollution prevention, conservation, blue economy, climate adaptation, circular economy
+- **Objectives:** Ecosystem protection, resource management, climate mitigation, biodiversity conservation
+- **Clusters:** Blue biotech, renewable energy, fisheries, tourism, conservation
+- **Technologies:** AI/ML, IoT, GIS, remote sensing, drones, blockchain
+- **Keywords:** 30+ searchable tags
 
 ### Related Data
-- Partners/Beneficiaries (3-10 per project)
-- Deliverables (reports, software, toolkits)
-- Publications (scientific papers)
-- Geographic zones (Mediterranean countries)
+- **Partners:** 3-10 organizations per project with roles and budgets
+- **Deliverables:** Reports, software, toolkits, datasets
+- **Publications:** Scientific papers with DOIs and journals
+- **Geographic Zones:** Mediterranean countries coverage
 
-## 🎨 Portal Features
+## 🎨 Portal Features Comparison
 
-### 1. Project Explorer
-
-- **View modes**: Table view with sortable columns
-- **Pagination**: Navigate through 950+ projects
-- **Quick stats**: Visual charts showing distribution
-- **Export**: Download to Excel for offline analysis
-
-### 2. Advanced Filtering
-
-Filter by any combination of:
-- **Status**: Active, Completed, Planned, Suspended, Closed
-- **Programme**: H2020, HE, LIFE, Interreg, ERDF
-- **Mission Pillars**: Multiple selection
-- **Objectives**: Multiple selection
-- **Clusters**: Technology/sector focus
-- **Technologies**: Digital tools used
-- **Geographic Zones**: Countries involved
-
-### 3. Search
-
-- **Full-text search** across titles, descriptions, keywords
-- **Real-time filtering** as you type
-- **Highlighted results** showing match context
-
-### 4. Project Details
-
-Complete information page for each project:
-- Full description and objectives
-- All partners with roles and budgets
-- Mission alignment and impact
-- Technologies and innovations
-- Geographic coverage
-- Links to websites
-
-### 5. Partner Directory
-
-- Browse all 6,215+ organizations
-- Filter by country and type
-- See all projects per organization
-- Export partner lists
-
-### 6. Comparison Tool
-
-- Select multiple projects
-- Compare side-by-side
-- See differences in budget, duration, approach, etc.
-
-### 7. Analytics Dashboard
-
-Charts showing:
-- Projects by Mission Pillar
-- Projects by Country
-- Budget distribution
-- Timeline visualization
+| Feature | HTML Version | React Version |
+|---------|-------------|---------------|
+| Project Browser | ✅ | ✅ |
+| Advanced Filtering | ✅ | ✅ |
+| Full-text Search | ✅ | ✅ |
+| Project Details | ✅ | ✅ |
+| Partner Directory | ✅ | ✅ |
+| Export to Excel | ✅ | ✅ |
+| Project Comparison | ✅ | ✅ |
+| Analytics Dashboard | ✅ | ✅ |
+| Responsive Design | ✅ | ✅ |
+| Hot Reload | ❌ | ✅ |
+| TypeScript | ❌ | ✅ |
+| Component Reusability | Limited | ✅ |
+| Build Optimization | ❌ | ✅ |
+| Setup Time | Instant | ~1 min |
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 18.2 + TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **Charts**: Recharts
-- **Data Export**: XLSX
-- **Routing**: React Router
+### HTML Version
+- **Frontend:** Pure HTML5
+- **Scripting:** Vanilla JavaScript (ES6+)
+- **Styling:** Tailwind CSS (CDN)
+- **Charts:** Custom SVG/Canvas
+- **Export:** XLSX library (CDN)
+- **Server:** Python http.server
+
+### React Version
+- **Frontend:** React 18.2 + TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS
+- **Charts:** Recharts
+- **Data Export:** XLSX
+- **Routing:** React Router
+
+## 📝 Database Schemas
+
+While this simulation doesn't require a database, comprehensive schemas are provided for production deployment:
+
+- **SQLite** (`database/schema_sqlite.sql`) - Lightweight deployment
+- **MySQL** (`database/schema_enhanced.sql`) - Production scale
+- **API Server** (`database/api_server.py`) - Flask REST API (optional)
+
+See [`database/README.md`](database/README.md) for details.
 
 ## 🔧 Development
 
 ### Prerequisites
 
+**For HTML version:**
+- Python 3.x (for local web server)
+- Modern web browser
+
+**For React version:**
 - Node.js 16+ (LTS recommended)
 - npm or yarn
 
-### Install Dependencies
+### Development Workflow
 
+**HTML:**
+```bash
+# Edit files in html_mock_elazem/
+# Refresh browser to see changes
+```
+
+**React:**
 ```bash
 cd react_mock_elazem
-npm install
-```
-
-### Development Server
-
-```bash
 npm run dev
+# Changes hot-reload automatically
 ```
 
-### Build for Production
+### Building for Production
 
+**HTML:**
+Already production-ready! Just deploy the `html_mock_elazem/` folder to any web server.
+
+**React:**
 ```bash
+cd react_mock_elazem
 npm run build
+# Outputs to dist/ folder
 ```
-
-### Preview Production Build
-
-```bash
-npm run preview
-```
-
-## 📝 Database Schemas
-
-While this simulation doesn't use a database, comprehensive schemas are provided for future production deployment:
-
-- **SQLite** (`database/schema_sqlite.sql`) - For lightweight deployment
-- **MySQL** (`database/schema_enhanced.sql`) - For production scale
-
-See [`database/README.md`](database/README.md) for details.
 
 ## 🎯 Project Context
 
 This simulation is part of the **TASC-RestoreMed** project Task 4.1: "Identification, Categorisation and Clustering of Projects."
 
 **Goals:**
-- Identify 900+ relevant EU projects (✅ 950 in simulation)
-- Create thematic clusters (✅ 7 clusters implemented)
-- Document synergies between projects
-- Provide searchable digital tool (✅ This portal)
+- ✅ Identify 900+ relevant EU projects (950 in simulation)
+- ✅ Create thematic clusters (7 clusters implemented)
+- ✅ Document synergies between projects
+- ✅ Provide searchable digital tool (Both versions available)
 
 ## 📚 Documentation
 
 - **[DATABASE_DICTIONARY.md](database/DATA_DICTIONARY.md)** - Complete field reference
+- **[database/README.md](database/README.md)** - Database documentation
+- **[database/SIMULATION_README.md](database/SIMULATION_README.md)** - API simulation docs
 - **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** - Development roadmap
 - **[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)** - Progress tracking
-
-## 🤝 Contributing
-
-This is a simulation/demo environment. To enhance it:
-
-1. **Add Features**: Implement additional filters, visualizations, exports
-2. **Improve UI**: Enhance design, add animations, improve mobile experience
-3. **Generate More Data**: Expand data generation for more realistic scenarios
-4. **Add Real Data**: Replace dummy data with actual EU project data
 
 ## ⚠️ Important Notes
 
@@ -288,7 +316,7 @@ This is a simulation/demo environment. To enhance it:
 
 - ✅ All data is **fictional** and generated for demonstration
 - ✅ Runs **100% locally** on your machine
-- ✅ No backend server required
+- ✅ No backend server required (for the simulation)
 - ✅ No database installation needed
 - ✅ No API keys or credentials needed
 - ✅ No internet connection required (after first setup)
@@ -301,7 +329,7 @@ This is a simulation/demo environment. To enhance it:
 - ❌ Real-time updates
 - ❌ Multi-user collaboration
 
-For production deployment, see `database/` for schema and API implementations.
+For production deployment, see `database/` for schemas and API implementations.
 
 ## 🚀 Next Steps
 
@@ -315,12 +343,23 @@ After exploring the simulation:
 6. **Add Synergies** - Implement synergy identification features
 7. **Deploy to Web** - Host on production server
 
+## 🤝 Contributing
+
+This is a simulation/demo environment. To enhance it:
+
+1. **Add Features:** Implement additional filters, visualizations, exports
+2. **Improve UI:** Enhance design, add animations, improve mobile experience
+3. **Generate More Data:** Expand data generation for more realistic scenarios
+4. **Add Real Data:** Replace dummy data with actual EU project data
+
 ## 📞 Support
 
 For questions about:
-- **Running the simulation**: Check this README
-- **Database structure**: See `database/DATA_DICTIONARY.md`
-- **Development**: See `IMPLEMENTATION_PLAN.md`
+- **Running the simulation:** Check this README
+- **Database structure:** See `database/DATA_DICTIONARY.md`
+- **HTML version:** Review `html_mock_elazem/script.js`
+- **React version:** See `react_mock_elazem/components/`
+- **Development:** See `IMPLEMENTATION_PLAN.md`
 
 ## 📄 License
 
@@ -331,26 +370,50 @@ This simulation is part of the TASC-RestoreMed project (Grant Agreement 10121766
 ## Quick Command Reference
 
 ```bash
-# Run the simulation
-./run_simulation.sh
+# Unified launcher (choose version interactively)
+./start_portal.sh
 
-# Regenerate dummy data
+# Direct launch - HTML version
+cd html_mock_elazem && python3 -m http.server 8000
+
+# Direct launch - React version
+cd react_mock_elazem && npm install && npm run dev
+
+# Regenerate all dummy data (both JS and TS)
 python3 database/generate_react_data.py
 
-# Install dependencies manually
-cd react_mock_elazem && npm install
-
-# Start development server manually
-cd react_mock_elazem && npm run dev
-
-# Build for production
+# Build React for production
 cd react_mock_elazem && npm run build
 ```
 
-**Main URL**: http://localhost:5173
+### URLs
+
+- **HTML Version:** http://localhost:8000
+- **React Version:** http://localhost:5173
 
 ---
 
-**Version**: 1.0 - Self-Contained Simulation
-**Last Updated**: 2025-11-19
-**Type**: Demonstration/Prototype Environment
+## Which Version Should I Use?
+
+### Choose HTML if you want:
+- ✅ Fastest setup (no npm install)
+- ✅ Simple deployment
+- ✅ No build step
+- ✅ Easy to understand/modify
+- ✅ Works anywhere Python is available
+
+### Choose React if you want:
+- ✅ Modern development experience
+- ✅ Hot reload during development
+- ✅ Better code organization
+- ✅ TypeScript safety
+- ✅ Optimized production builds
+- ✅ Component-based architecture
+
+**Can't decide? Try both!** They have the same data and features.
+
+---
+
+**Version:** 2.0 - Dual Implementation Simulation
+**Last Updated:** 2025-11-19
+**Type:** Demonstration/Prototype Environment with HTML & React versions

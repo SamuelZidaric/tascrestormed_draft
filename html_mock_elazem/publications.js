@@ -2,7 +2,7 @@
 // Generated: 2025-11-19 13:43:15
 // Total records: 529
 
-export const publications = [
+const publications = [
   {
     "id": 1,
     "projectId": 2,
