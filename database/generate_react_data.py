@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Generate realistic dummy data as TypeScript files for React app
-Creates 950+ projects with all related data directly in the frontend
+Generate realistic dummy data as TypeScript/JavaScript files for React and HTML apps
+Creates 10 varied projects with all related data directly in the frontend
+Optimized for testing and simulation with diverse, representative data
 """
 
 import random
@@ -10,7 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Configuration
-NUM_PROJECTS = 950
+NUM_PROJECTS = 10  # Generate 10 varied projects for stable testing and simulation
 OUTPUT_DIR_REACT = Path(__file__).parent.parent / 'react_mock_elazem' / 'data'
 OUTPUT_DIR_HTML = Path(__file__).parent.parent / 'html_mock_elazem'
 
