@@ -277,6 +277,9 @@ function initDashboardOverview(projects, partners) {
 /* -------------------------------------------------------------------------- */
 
 function initProjectExplorer(projects) {
+  const INITIAL_BATCH_SIZE = 50;
+  const LOAD_MORE_BATCH_SIZE = 50;
+
   const state = {
     searchQuery: "",
     searchTokens: [],
@@ -290,6 +293,8 @@ function initProjectExplorer(projects) {
       technologyPillars: new Set(),
     },
     selectedProjects: new Set(),
+    displayedCount: INITIAL_BATCH_SIZE,
+    filteredProjects: [],
   };
 
   const refs = {
@@ -308,6 +313,8 @@ function initProjectExplorer(projects) {
     compareModalClose: document.getElementById("closeCompareModal"),
     compareTableHead: document.getElementById("compareTableHead"),
     compareTableBody: document.getElementById("compareTableBody"),
+    loadMoreButton: null,
+    loadMoreContainer: null,
   };
 
   if (!refs.searchInput || !refs.tableBody || !refs.filtersContainer) {
@@ -315,8 +322,33 @@ function initProjectExplorer(projects) {
     return;
   }
 
+  // Create load more button container
+  const tableSection = refs.tableBody.closest('section');
+  if (tableSection) {
+    const loadMoreContainer = document.createElement('div');
+    loadMoreContainer.id = 'loadMoreContainer';
+    loadMoreContainer.className = 'hidden border-t border-slate-200 bg-slate-50 px-6 py-6 text-center';
+    loadMoreContainer.innerHTML = `
+      <button id="loadMoreButton" class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+        Load More Projects
+      </button>
+      <p class="mt-2 text-sm text-slate-500">
+        Showing <span id="displayedProjectsCount">0</span> of <span id="totalFilteredCount">0</span> projects
+      </p>
+    `;
+    tableSection.appendChild(loadMoreContainer);
+    refs.loadMoreContainer = loadMoreContainer;
+    refs.loadMoreButton = document.getElementById('loadMoreButton');
+  }
+
   const filterDefinitions = getProjectFilterDefinitions(projects);
-  const filterApi = setupFilterSystem(refs.filtersContainer, filterDefinitions, state.filters, refreshProjects);
+  const filterApi = setupFilterSystem(refs.filtersContainer, filterDefinitions, state.filters, () => {
+    state.displayedCount = INITIAL_BATCH_SIZE;
+    refreshProjects();
+  });
 
   refs.searchInput.addEventListener(
     "input",
@@ -324,6 +356,7 @@ function initProjectExplorer(projects) {
       const value = event.target.value || "";
       state.searchQuery = value;
       state.searchTokens = tokenize(value);
+      state.displayedCount = INITIAL_BATCH_SIZE;
       refreshProjects();
     }, 200),
   );
@@ -332,14 +365,19 @@ function initProjectExplorer(projects) {
     state.searchQuery = "";
     state.searchTokens = [];
     state.selectedProjects.clear();
+    state.displayedCount = INITIAL_BATCH_SIZE;
     refs.searchInput.value = "";
     filterApi.resetAll();
     refreshProjects();
   });
 
+  refs.loadMoreButton?.addEventListener("click", () => {
+    state.displayedCount += LOAD_MORE_BATCH_SIZE;
+    refreshProjects();
+  });
+
   refs.exportButton?.addEventListener("click", () => {
-    const visibleProjects = getFilteredProjects(projects, state);
-    exportProjectsToWorkbook(visibleProjects);
+    exportProjectsToWorkbook(state.filteredProjects);
   });
 
   refs.compareButton?.addEventListener("click", () => {
@@ -376,12 +414,25 @@ function initProjectExplorer(projects) {
   refreshProjects();
 
   function refreshProjects() {
-    const filtered = getFilteredProjects(projects, state);
-    renderProjectTable(refs.tableBody, filtered, state.selectedProjects);
-    updateResultsSummary(refs.resultsCount, filtered.length, projects.length);
+    state.filteredProjects = getFilteredProjects(projects, state);
+    const displayed = state.filteredProjects.slice(0, state.displayedCount);
+
+    renderProjectTable(refs.tableBody, displayed, state.selectedProjects);
+    updateResultsSummary(refs.resultsCount, state.filteredProjects.length, projects.length);
     updateSelectionSummary(refs, state);
-    toggleEmptyState(refs.emptyState, filtered.length === 0);
+    toggleEmptyState(refs.emptyState, state.filteredProjects.length === 0);
     updateCompareButton(refs.compareButton, refs.compareHint, state.selectedProjects.size);
+
+    // Update load more button
+    if (refs.loadMoreContainer) {
+      const hasMore = state.displayedCount < state.filteredProjects.length;
+      refs.loadMoreContainer.classList.toggle('hidden', !hasMore || state.filteredProjects.length === 0);
+
+      const displayedCountEl = document.getElementById('displayedProjectsCount');
+      const totalCountEl = document.getElementById('totalFilteredCount');
+      if (displayedCountEl) displayedCountEl.textContent = Math.min(state.displayedCount, state.filteredProjects.length);
+      if (totalCountEl) totalCountEl.textContent = state.filteredProjects.length;
+    }
   }
 }
 

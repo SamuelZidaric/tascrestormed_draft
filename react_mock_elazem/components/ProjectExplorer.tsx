@@ -99,6 +99,9 @@ const CompareModal: React.FC<{ projects: Project[], onClose: () => void }> = ({ 
     );
 };
 
+const INITIAL_BATCH_SIZE = 50;
+const LOAD_MORE_BATCH_SIZE = 50;
+
 export const ProjectExplorer: React.FC = () => {
   const [filters, setFilters] = useState({
     search: '',
@@ -111,6 +114,7 @@ export const ProjectExplorer: React.FC = () => {
   });
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [isCompareModalOpen, setCompareModalOpen] = useState(false);
+  const [displayedCount, setDisplayedCount] = useState(INITIAL_BATCH_SIZE);
   const navigate = useNavigate();
 
   const filteredProjects = useMemo(() => {
@@ -132,14 +136,20 @@ export const ProjectExplorer: React.FC = () => {
       return matchesSearch && matchesStatus && matchesPillars && matchesObjectives && matchesClusters && matchesTechnologies && matchesZones;
     });
   }, [filters]);
-  
+
+  const displayedProjects = useMemo(() => {
+    return filteredProjects.slice(0, displayedCount);
+  }, [filteredProjects, displayedCount]);
+
   const handleFilterChange = <K extends keyof typeof filters>(key: K, value: (typeof filters)[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    setDisplayedCount(INITIAL_BATCH_SIZE);
   };
 
   const resetFilters = () => {
     setFilters({ search: '', status: [], pillars: [], objectives: [], clusters: [], technologies: [], zones: [] });
     setSelectedProjects([]);
+    setDisplayedCount(INITIAL_BATCH_SIZE);
   };
 
   const handleSelectProject = (projectId: string) => {
@@ -147,13 +157,17 @@ export const ProjectExplorer: React.FC = () => {
       prev.includes(projectId) ? prev.filter(id => id !== projectId) : [...prev, projectId]
     );
   };
-  
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedProjects(filteredProjects.map(p => p.id));
+      setSelectedProjects(displayedProjects.map(p => p.id));
     } else {
       setSelectedProjects([]);
     }
+  };
+
+  const loadMore = () => {
+    setDisplayedCount(prev => prev + LOAD_MORE_BATCH_SIZE);
   };
 
   return (
@@ -222,7 +236,7 @@ export const ProjectExplorer: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredProjects.map((p) => (
+                        {displayedProjects.map((p) => (
                             <tr key={p.id} onClick={() => navigate(`/project/${p.id}`)} className="hover:bg-gray-50 cursor-pointer">
                                 <td className="p-4" onClick={e => e.stopPropagation()}>
                                     <input type="checkbox" checked={selectedProjects.includes(p.id)} onChange={() => handleSelectProject(p.id)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
@@ -247,8 +261,24 @@ export const ProjectExplorer: React.FC = () => {
                         ))}
                     </tbody>
                 </table>
-                 {filteredProjects.length === 0 && <div className="text-center py-8 text-gray-500">No projects found.</div>}
+                {filteredProjects.length === 0 && <div className="text-center py-8 text-gray-500">No projects found.</div>}
             </div>
+            {displayedCount < filteredProjects.length && (
+                <div className="bg-gray-50 border-t border-gray-200 px-6 py-6 text-center">
+                    <button
+                        onClick={loadMore}
+                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md px-6 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        Load More Projects
+                    </button>
+                    <p className="mt-2 text-sm text-gray-500">
+                        Showing {displayedProjects.length} of {filteredProjects.length} projects
+                    </p>
+                </div>
+            )}
         </div>
     </div>
   );
