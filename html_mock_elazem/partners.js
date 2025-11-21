@@ -1,7 +1,7 @@
 // Simplified realistic dummy data for testing and simulation
 // Total records: 32 partners across 10 projects
 
-const partners = [
+window.partners = [
   // Project 1: MedCoastRestore
   {
     "id": 1,

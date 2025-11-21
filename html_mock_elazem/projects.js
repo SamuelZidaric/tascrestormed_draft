@@ -1,7 +1,7 @@
 // Simplified realistic dummy data for testing and simulation
 // Total records: 10 varied projects
 
-const projects = [
+window.projects = [
   {
     "id": 1,
     "acronym": "MedCoastRestore",
