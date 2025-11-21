@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Generate realistic mock data for EU Projects Database simulation
-Creates 900+ projects with partners, deliverables, publications, and reports
+Creates 10 varied projects with partners, deliverables, publications, and reports
+Optimized for testing and simulation with diverse, representative data
 """
 
 import sqlite3
@@ -11,7 +12,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Configuration
-NUM_PROJECTS = 950  # Generate 950 projects to exceed the 900 target
+NUM_PROJECTS = 10  # Generate 10 varied projects for stable testing and simulation
 DB_PATH = Path(__file__).parent / 'eu_projects_simulation.db'
 
 # Data pools for realistic generation
