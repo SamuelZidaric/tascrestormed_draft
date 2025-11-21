@@ -53,31 +53,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function prepareProjects(projects) {
   return projects.map((project) => {
-    const partnerNames = project.partners.map((partner) => partner.name);
+    // Normalize field names to match expected structure
+    const normalizedProject = {
+      ...project,
+      id: String(project.id), // Ensure ID is a string for consistency
+      summary: project.description || project.summary,
+      missionObjectives: project.objectives || project.missionObjectives || [],
+      topicClusters: project.clusters || project.topicClusters || [],
+      technologyPillars: project.technologies || project.technologyPillars || [],
+      missionZone: project.missionZone || (project.geographicZones && project.geographicZones[0]) || "Unknown",
+      startYear: project.startYear || (project.startDate ? new Date(project.startDate).getFullYear() : null),
+      budget: project.budget || (project.totalBudget ? `€${(project.totalBudget / 1000000).toFixed(2)}M` : "—"),
+      funding: project.funding || (project.euContribution ? `€${(project.euContribution / 1000000).toFixed(2)}M` : "—"),
+      partners: project.partners || [],
+      missionKpis: project.missionKpis || [],
+      comparison: project.comparison || {
+        euContribution: project.euContribution ? `€${(project.euContribution / 1000000).toFixed(2)}M` : "—",
+        durationMonths: project.startDate && project.endDate
+          ? Math.round((new Date(project.endDate) - new Date(project.startDate)) / (1000 * 60 * 60 * 24 * 30))
+          : "—",
+        missionZoneFocus: project.missionZone || (project.geographicZones && project.geographicZones[0]) || "—",
+        technologyFocus: project.technologies && project.technologies[0] || project.technologyPillars && project.technologyPillars[0] || "—"
+      },
+      insights: project.insights || {
+        technologyHighlights: [],
+        engagementActions: []
+      }
+    };
+
+    const partnerNames = normalizedProject.partners.map((partner) => typeof partner === 'string' ? partner : partner.name);
     const searchCorpus = normalizeText(
       [
-        project.id,
-        project.title,
-        project.acronym,
-        project.summary,
-        project.funding,
-        project.leadPartner,
-        project.leadCountry,
-        project.missionZone,
-        project.missionPillars.join(" "),
-        project.missionObjectives.join(" "),
-        project.topicClusters.join(" "),
-        project.technologyPillars.join(" "),
-        (project.keywords || []).join(" "),
+        normalizedProject.id,
+        normalizedProject.title,
+        normalizedProject.acronym,
+        normalizedProject.summary,
+        normalizedProject.funding,
+        normalizedProject.leadPartner,
+        normalizedProject.leadCountry,
+        normalizedProject.missionZone,
+        normalizedProject.missionPillars.join(" "),
+        normalizedProject.missionObjectives.join(" "),
+        normalizedProject.topicClusters.join(" "),
+        normalizedProject.technologyPillars.join(" "),
+        (normalizedProject.keywords || []).join(" "),
         partnerNames.join(" "),
-        (project.missionKpis || []).join(" "),
+        (normalizedProject.missionKpis || []).join(" "),
       ]
         .filter(Boolean)
         .join(" "),
     );
 
     return {
-      ...project,
+      ...normalizedProject,
       partnerNames,
       searchCorpus,
     };
@@ -88,6 +116,11 @@ function buildPartnerIndex(projects) {
   const index = new Map();
 
   projects.forEach((project) => {
+    // Handle case where partners might be empty array
+    if (!project.partners || project.partners.length === 0) {
+      return;
+    }
+
     project.partners.forEach((partner) => {
       if (!index.has(partner.id)) {
         index.set(partner.id, {
